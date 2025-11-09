@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useBankEntries, useBankSurplus, useApplyBanked } from '@/application/hooks/useBanking';
+import { useBankEntries, useBankSurplus, useApplyBanked, useDeleteBankEntry } from '@/application/hooks/useBanking';
 import { Table } from '@/ui/components/Table';
 import { Button } from '@/ui/components/Button';
 import { Input } from '@/ui/components/Input';
@@ -19,9 +19,10 @@ export function BankingTab() {
     applicationDate: new Date().toISOString().split('T')[0],
   });
 
-  const { data: entries = [], isLoading, refetch } = useBankEntries();
+  const { data: entries = [], isLoading } = useBankEntries();
   const bankSurplus = useBankSurplus();
   const applyBanked = useApplyBanked();
+  const deleteEntry = useDeleteBankEntry();
 
   const handleBankSurplus = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -41,7 +42,6 @@ export function BankingTab() {
         maxBankingCapacity: '',
         bankingValidityYears: '2',
       });
-      refetch();
     } catch (err) {
       console.error('Failed to bank surplus:', err);
     }
@@ -65,35 +65,61 @@ export function BankingTab() {
         deficit: '',
         applicationDate: new Date().toISOString().split('T')[0],
       });
-      refetch();
     } catch (err) {
       console.error('Failed to apply banked units:', err);
     }
   };
 
+  const handleDeleteEntry = async (id: string) => {
+    if (window.confirm('Are you sure you want to delete this bank entry?')) {
+      try {
+        await deleteEntry.mutateAsync(id);
+        // Query will automatically refetch due to invalidation in the hook
+      } catch (err) {
+        console.error('Failed to delete bank entry:', err);
+        alert('Failed to delete bank entry. Please try again.');
+      }
+    }
+  };
+
   const columns = [
-    { header: 'Ship ID', accessor: 'shipId' as keyof BankEntry },
-    { header: 'Units', accessor: 'units' as keyof BankEntry },
-    { header: 'Banked At', accessor: 'bankedAt' as keyof BankEntry },
+    { key: 'shipId' as keyof BankEntry, header: 'Ship ID' },
+    { key: 'units' as keyof BankEntry, header: 'Units' },
+    { key: 'bankedAt' as keyof BankEntry, header: 'Banked At' },
     {
+      key: 'expiryDate' as keyof BankEntry,
       header: 'Expiry Date',
-      accessor: (row: BankEntry) => {
+      render: (value: BankEntry[keyof BankEntry], row: BankEntry) => {
         const expiry = new Date(row.expiryDate);
         const isExpired = expiry < new Date();
         return (
-          <span className={isExpired ? 'text-red-600' : ''}>
+          <span className={isExpired ? 'text-red-600 font-semibold' : 'text-gray-700'}>
             {expiry.toLocaleDateString()}
             {isExpired && ' (Expired)'}
           </span>
         );
       },
     },
+    {
+      key: 'id' as keyof BankEntry,
+      header: 'Actions',
+      render: (_value: BankEntry[keyof BankEntry], row: BankEntry) => (
+        <Button
+          variant="danger"
+          onClick={() => handleDeleteEntry(row.id)}
+          disabled={deleteEntry.isPending}
+          className="text-sm"
+        >
+          {deleteEntry.isPending ? 'Deleting...' : 'Delete'}
+        </Button>
+      ),
+    },
   ];
 
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold text-gray-900">Banking</h2>
+        <h2 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">Banking</h2>
         <div className="flex gap-2">
           <Button onClick={() => setShowBankForm(!showBankForm)}>
             {showBankForm ? 'Cancel' : 'Bank Surplus'}
@@ -105,8 +131,8 @@ export function BankingTab() {
       </div>
 
       {showBankForm && (
-        <form onSubmit={handleBankSurplus} className="bg-white p-6 rounded-lg shadow space-y-4">
-          <h3 className="text-lg font-semibold">Bank Surplus Units</h3>
+        <form onSubmit={handleBankSurplus} className="bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300 border border-gray-100 space-y-4">
+          <h3 className="text-lg font-semibold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">Bank Surplus Units</h3>
           <div className="grid grid-cols-2 gap-4">
             <Input
               label="Surplus Units"
@@ -151,8 +177,8 @@ export function BankingTab() {
       )}
 
       {showApplyForm && (
-        <form onSubmit={handleApplyBanked} className="bg-white p-6 rounded-lg shadow space-y-4">
-          <h3 className="text-lg font-semibold">Apply Banked Units</h3>
+        <form onSubmit={handleApplyBanked} className="bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300 border border-gray-100 space-y-4">
+          <h3 className="text-lg font-semibold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">Apply Banked Units</h3>
           <div className="grid grid-cols-2 gap-4">
             <Input
               label="Deficit"
@@ -181,10 +207,10 @@ export function BankingTab() {
         </form>
       )}
 
-      <div className="bg-white p-6 rounded-lg shadow">
-        <h3 className="text-lg font-semibold mb-4">Bank Entries</h3>
+      <div className="bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300 border border-gray-100">
+        <h3 className="text-lg font-semibold mb-4 text-gray-800">Bank Entries</h3>
         {isLoading && <div className="text-center py-8">Loading...</div>}
-        {!isLoading && <Table columns={columns} data={entries} emptyMessage="No bank entries" />}
+        {!isLoading && <Table columns={columns} data={entries} emptyText="No bank entries" />}
       </div>
     </div>
   );

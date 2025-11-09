@@ -24,14 +24,14 @@ function Table<T extends Record<string, unknown>>({
   className = "",
 }: TableProps<T>) {
   return (
-    <div className={`overflow-x-auto ${className}`}>
-      <table className="min-w-full border-collapse">
+    <div className={`overflow-x-auto rounded-lg shadow-sm ${className}`}>
+      <table className="min-w-full border-collapse bg-white">
         <thead>
-          <tr>
+          <tr className="bg-gradient-to-r from-gray-50 to-gray-100">
             {columns.map((col) => (
               <th
                 key={String(col.key)}
-                className={`text-left px-3 py-2 border-b ${col.className ?? ""}`}
+                className={`text-left px-4 py-3 border-b-2 border-gray-200 font-semibold text-gray-700 ${col.className ?? ""}`}
               >
                 {col.header}
               </th>
@@ -42,7 +42,7 @@ function Table<T extends Record<string, unknown>>({
           {data.length === 0 ? (
             <tr>
               <td
-                className="px-3 py-3 text-center text-sm text-gray-500"
+                className="px-4 py-8 text-center text-sm text-gray-500"
                 colSpan={columns.length}
               >
                 {emptyText}
@@ -50,13 +50,16 @@ function Table<T extends Record<string, unknown>>({
             </tr>
           ) : (
             data.map((row, rowIndex) => (
-              <tr key={getRowKey(row, rowIndex)} className="hover:bg-gray-50">
+              <tr 
+                key={getRowKey(row, rowIndex)} 
+                className="hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 transition-all duration-200 border-b border-gray-100 cursor-pointer"
+              >
                 {columns.map((col) => {
                   const value = row[col.key];
                   return (
                     <td
                       key={String(col.key)}
-                      className={`px-3 py-2 border-b ${col.className ?? ""}`}
+                      className={`px-4 py-3 text-gray-700 ${col.className ?? ""}`}
                     >
                       {col.render ? col.render(value, row, rowIndex) : (value as React.ReactNode)}
                     </td>

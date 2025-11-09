@@ -24,15 +24,24 @@ export function createBankingRouter(): Router {
           bankingValidityYears,
         });
 
-        // Optionally save to database
-        // await prisma.bankEntry.create({
-        //   data: {
-        //     shipId: req.body.shipId, // Would need to be in request
-        //     units: result.bankedUnits,
-        //     bankedAt: result.bankedAt,
-        //     expiryDate: result.expiryDate,
-        //   },
-        // });
+        // Save to database if shipId is provided
+        const shipId = req.body.shipId || 'default-ship'; // Default if not provided
+        const reportingPeriod = req.body.reportingPeriod || new Date().getFullYear().toString();
+        
+        try {
+          await prisma.bankEntry.create({
+            data: {
+              vesselId: shipId,
+              reportingPeriod: reportingPeriod,
+              bankedAmount: result.bankedUnits,
+              appliedAmount: 0,
+              remainingAmount: result.bankedUnits,
+            },
+          });
+        } catch (dbError) {
+          // Log but don't fail the request if DB save fails
+          console.error('Failed to save bank entry to database:', dbError);
+        }
 
         res.status(201).json({ result });
       } catch (error) {
@@ -81,24 +90,62 @@ export function createBankingRouter(): Router {
 
         const where: any = {};
         if (shipId) {
-          where.shipId = shipId;
+          where.vesselId = shipId;
         }
-        if (expired !== undefined) {
-          if (expired) {
-            where.expiryDate = { lt: new Date() };
-          } else {
-            where.expiryDate = { gte: new Date() };
-          }
-        }
+        // Note: The Prisma schema doesn't have expiryDate, so we can't filter by expired
+        // If needed, this would require schema changes or calculating expiry from reportingPeriod
 
         const entries = await prisma.bankEntry.findMany({
           where,
-          orderBy: { bankedAt: 'desc' },
+          orderBy: { createdAt: 'desc' },
         });
 
-        res.json({ entries });
+        // Map database fields to frontend-expected format
+        const mappedEntries = entries.map((entry) => {
+          const bankedDate = new Date(entry.createdAt);
+          const expiryDate = new Date(bankedDate);
+          expiryDate.setFullYear(expiryDate.getFullYear() + 2); // Default 2 years validity
+          
+          return {
+            id: entry.id,
+            shipId: entry.vesselId,
+            units: entry.remainingAmount, // Remaining units (bankedAmount - appliedAmount)
+            bankedAt: entry.createdAt.toISOString(),
+            expiryDate: expiryDate.toISOString(),
+            createdAt: entry.createdAt.toISOString(),
+            updatedAt: entry.updatedAt.toISOString(),
+          };
+        });
+
+        res.json({ entries: mappedEntries });
       } catch (error) {
         res.status(500).json({ error: 'Failed to fetch bank entries', message: (error as Error).message });
+      }
+    }
+  );
+
+  // DELETE /banking/entries/:id - Delete a bank entry
+  router.delete(
+    '/entries/:id',
+    async (req: Request, res: Response) => {
+      try {
+        const { id } = req.params;
+
+        const entry = await prisma.bankEntry.findUnique({
+          where: { id },
+        });
+
+        if (!entry) {
+          return res.status(404).json({ error: 'Bank entry not found' });
+        }
+
+        await prisma.bankEntry.delete({
+          where: { id },
+        });
+
+        res.status(200).json({ message: 'Bank entry deleted successfully' });
+      } catch (error) {
+        res.status(500).json({ error: 'Failed to delete bank entry', message: (error as Error).message });
       }
     }
   );

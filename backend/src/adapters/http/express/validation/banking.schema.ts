@@ -6,6 +6,8 @@ export const bankSurplusSchema = z.object({
     bankingDate: z.string().datetime().or(z.date()),
     maxBankingCapacity: z.number().positive().optional(),
     bankingValidityYears: z.number().int().positive().max(10).optional(),
+    shipId: z.string().optional(),
+    reportingPeriod: z.string().optional(),
   }),
 });
 

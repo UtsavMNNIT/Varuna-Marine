@@ -4,11 +4,15 @@ import { useCompliance, useComputeCB, useComputeComparison } from '@/application
 import { Input } from '@/ui/components/Input';
 import { Button } from '@/ui/components/Button';
 import { Select } from '@/ui/components/Select';
+import { ComputeCBResult, ComputeComparisonResult } from '@/adapters/api/compliance-api';
 
 export function CompareTab() {
   const [ghgIntensity, setGhgIntensity] = useState('');
   const [fuelConsumption, setFuelConsumption] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('');
+  const [cbResult, setCbResult] = useState<ComputeCBResult | null>(null);
+  const [comparisonResult, setComparisonResult] = useState<ComputeComparisonResult | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const { data: compliance = [], isLoading } = useCompliance(
     filterStatus ? { status: filterStatus } : undefined
@@ -18,36 +22,44 @@ export function CompareTab() {
 
   const handleComputeCB = async () => {
     if (!ghgIntensity || !fuelConsumption) {
-      alert('Please enter both GHG Intensity and Fuel Consumption values');
+      setError('Please enter both GHG Intensity and Fuel Consumption values');
+      setCbResult(null);
+      setComparisonResult(null);
       return;
     }
+    setError(null);
+    setComparisonResult(null);
     try {
       const result = await computeCB.mutateAsync({
         actualGhgIntensity: Number(ghgIntensity),
         fuelConsumption: Number(fuelConsumption),
       });
-      alert(`Compliance Balance: ${result.cb.toFixed(2)}\n${result.isSurplus ? 'Surplus' : 'Deficit'}`);
+      setCbResult(result);
     } catch (err: any) {
       console.error('Failed to compute CB:', err);
-      alert(`Error: ${err?.message || 'Failed to compute Compliance Balance. Please check the console for details.'}`);
+      setError(err?.message || 'Failed to compute Compliance Balance. Please check the console for details.');
+      setCbResult(null);
     }
   };
 
   const handleComputeComparison = async () => {
     if (!ghgIntensity) {
-      alert('Please enter GHG Intensity value');
+      setError('Please enter GHG Intensity value');
+      setCbResult(null);
+      setComparisonResult(null);
       return;
     }
+    setError(null);
+    setCbResult(null);
     try {
       const result = await computeComparison.mutateAsync({
         actualGhgIntensity: Number(ghgIntensity),
       });
-      alert(
-        `Actual: ${result.actual}\nTarget: ${result.target}\nDifference: ${result.difference.toFixed(2)}\nCompliant: ${result.isCompliant ? 'Yes' : 'No'}`
-      );
+      setComparisonResult(result);
     } catch (err: any) {
       console.error('Failed to compute comparison:', err);
-      alert(`Error: ${err?.message || 'Failed to compute comparison. Please check the console for details.'}`);
+      setError(err?.message || 'Failed to compute comparison. Please check the console for details.');
+      setComparisonResult(null);
     }
   };
 
@@ -78,10 +90,10 @@ export function CompareTab() {
 
   return (
     <div className="space-y-6">
-      <h2 className="text-2xl font-bold text-gray-900">Compare & Analyze</h2>
+      <h2 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">Compare & Analyze</h2>
 
-      <div className="bg-white p-6 rounded-lg shadow">
-        <h3 className="text-lg font-semibold mb-4">Compute Compliance</h3>
+      <div className="bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300 border border-gray-100">
+        <h3 className="text-lg font-semibold mb-4 text-gray-800">Compute Compliance</h3>
         <div className="grid grid-cols-3 gap-4 mb-4">
           <Input
             label="GHG Intensity (gCO2eq/MJ)"
@@ -110,7 +122,94 @@ export function CompareTab() {
         </div>
       </div>
 
-      <div className="bg-white p-6 rounded-lg shadow">
+      {/* Results Display */}
+      {(cbResult || comparisonResult || error) && (
+        <div className="bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300 border border-gray-100">
+          <h3 className="text-lg font-semibold mb-4 bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
+            Result
+          </h3>
+          
+          {error && (
+            <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-red-600 font-medium">{error}</p>
+            </div>
+          )}
+
+          {cbResult && (
+            <div className="space-y-3">
+              <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-semibold text-gray-700">Compliance Balance:</span>
+                  <span className="text-2xl font-bold text-blue-700">{cbResult.cb.toFixed(2)}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-semibold text-gray-700">Status:</span>
+                  <span
+                    className={`px-3 py-1 rounded-full text-sm font-semibold ${
+                      cbResult.isSurplus
+                        ? 'bg-green-100 text-green-700'
+                        : 'bg-red-100 text-red-700'
+                    }`}
+                  >
+                    {cbResult.isSurplus ? 'Surplus' : 'Deficit'}
+                  </span>
+                </div>
+                <div className="mt-3 pt-3 border-t border-blue-200 grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <span className="text-gray-600">Target GHG Intensity:</span>
+                    <span className="ml-2 font-semibold text-gray-800">{cbResult.target.toFixed(2)}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-600">Actual GHG Intensity:</span>
+                    <span className="ml-2 font-semibold text-gray-800">{cbResult.actual.toFixed(2)}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-600">Fuel Consumption:</span>
+                    <span className="ml-2 font-semibold text-gray-800">{cbResult.fuelConsumption.toFixed(2)} tons</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {comparisonResult && (
+            <div className="space-y-3">
+              <div className="p-4 bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg border border-purple-200">
+                <div className="grid grid-cols-2 gap-4 mb-3">
+                  <div>
+                    <span className="text-sm font-semibold text-gray-700">Actual GHG Intensity:</span>
+                    <span className="ml-2 text-lg font-bold text-purple-700">{comparisonResult.actual.toFixed(2)}</span>
+                  </div>
+                  <div>
+                    <span className="text-sm font-semibold text-gray-700">Target GHG Intensity:</span>
+                    <span className="ml-2 text-lg font-bold text-purple-700">{comparisonResult.target.toFixed(2)}</span>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between mb-3 pt-3 border-t border-purple-200">
+                  <span className="text-sm font-semibold text-gray-700">Difference:</span>
+                  <span className={`text-xl font-bold ${comparisonResult.difference >= 0 ? 'text-red-600' : 'text-green-600'}`}>
+                    {comparisonResult.difference >= 0 ? '+' : ''}{comparisonResult.difference.toFixed(2)}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-semibold text-gray-700">Compliance Status:</span>
+                  <span
+                    className={`px-3 py-1 rounded-full text-sm font-semibold ${
+                      comparisonResult.isCompliant
+                        ? 'bg-green-100 text-green-700'
+                        : 'bg-red-100 text-red-700'
+                    }`}
+                  >
+                    {comparisonResult.isCompliant ? 'Compliant' : 'Non-Compliant'}
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      <div className="bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300 border border-gray-100">
         <div className="mb-4">
           <Select
             label="Filter by Status"
@@ -127,12 +226,12 @@ export function CompareTab() {
           />
         </div>
 
-        {isLoading && <div className="text-center py-8">Loading...</div>}
+        {isLoading && <div className="text-center py-8 text-gray-500">Loading...</div>}
 
         {!isLoading && compliance.length > 0 && (
           <div className="space-y-8">
-            <div>
-              <h3 className="text-lg font-semibold mb-4">GHG Intensity Comparison</h3>
+            <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg hover:from-blue-100 hover:to-indigo-100 transition-all duration-300">
+              <h3 className="text-lg font-semibold mb-4 text-gray-800">GHG Intensity Comparison</h3>
               <ResponsiveContainer width="100%" height={300}>
                 <LineChart data={intensityData}>
                   <CartesianGrid strokeDasharray="3 3" />
@@ -146,8 +245,8 @@ export function CompareTab() {
               </ResponsiveContainer>
             </div>
 
-            <div>
-              <h3 className="text-lg font-semibold mb-4">Compliance Balance by Voyage</h3>
+            <div className="p-4 bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg hover:from-purple-100 hover:to-pink-100 transition-all duration-300">
+              <h3 className="text-lg font-semibold mb-4 text-gray-800">Compliance Balance by Voyage</h3>
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={cbData}>
                   <CartesianGrid strokeDasharray="3 3" />
@@ -160,8 +259,8 @@ export function CompareTab() {
               </ResponsiveContainer>
             </div>
 
-            <div>
-              <h3 className="text-lg font-semibold mb-4">Status Distribution</h3>
+            <div className="p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg hover:from-green-100 hover:to-emerald-100 transition-all duration-300">
+              <h3 className="text-lg font-semibold mb-4 text-gray-800">Status Distribution</h3>
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={statusChartData}>
                   <CartesianGrid strokeDasharray="3 3" />

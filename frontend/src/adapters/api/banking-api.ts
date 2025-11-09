@@ -63,5 +63,9 @@ export const bankingApi = {
     const response = await apiClient.get('/banking/entries', { params });
     return response.data.entries;
   },
+
+  deleteEntry: async (id: string): Promise<void> => {
+    await apiClient.delete(`/banking/entries/${id}`);
+  },
 };
 

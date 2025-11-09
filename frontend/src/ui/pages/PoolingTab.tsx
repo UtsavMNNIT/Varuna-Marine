@@ -154,14 +154,15 @@ export function PoolingTab() {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold text-gray-900">Pooling</h2>
+        <h2 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">Pooling</h2>
         <Button onClick={() => setShowForm(!showForm)}>
           {showForm ? 'Cancel' : 'Create Pool'}
         </Button>
       </div>
 
       {showForm && (
-        <form onSubmit={handleSubmit} className="bg-white p-6 rounded-lg shadow space-y-4">
+        <form onSubmit={handleSubmit} className="bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300 border border-gray-100 space-y-4">
+          <h3 className="text-lg font-semibold mb-4 bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">Create New Pool</h3>
           <div className="grid grid-cols-2 gap-4">
             <Input
               label="Pool Name"
@@ -206,7 +207,7 @@ export function PoolingTab() {
         </form>
       )}
 
-      <div className="bg-white p-6 rounded-lg shadow">
+      <div className="bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300 border border-gray-100">
         <div className="mb-4">
           <Select
             label="Filter by Status"
@@ -235,9 +236,9 @@ export function PoolingTab() {
       </div>
 
       {selectedPool && (
-        <div className="bg-white p-6 rounded-lg shadow">
+        <div className="bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300 border border-gray-100">
           <div className="flex justify-between items-center mb-4">
-            <h3 className="text-lg font-semibold">Pool Members</h3>
+            <h3 className="text-lg font-semibold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">Pool Members</h3>
             <div className="flex gap-2">
               <Button variant="secondary" onClick={() => setSelectedPool(null)}>
                 Close
@@ -249,7 +250,7 @@ export function PoolingTab() {
           </div>
 
           {showMemberForm && (
-            <form onSubmit={handleAddMember} className="mb-4 p-4 bg-gray-50 rounded space-y-4">
+            <form onSubmit={handleAddMember} className="mb-4 p-4 bg-gradient-to-r from-gray-50 to-blue-50 rounded-lg hover:from-gray-100 hover:to-blue-100 transition-all duration-300 space-y-4 border border-gray-200">
               <div className="grid grid-cols-2 gap-4">
                 <Input
                   label="Ship ID"

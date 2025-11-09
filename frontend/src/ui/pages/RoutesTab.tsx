@@ -85,14 +85,15 @@ export function RoutesTab() {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold text-gray-900">Routes</h2>
+        <h2 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">Routes</h2>
         <Button onClick={() => setShowForm(!showForm)}>
           {showForm ? 'Cancel' : 'Add Route'}
         </Button>
       </div>
 
       {showForm && (
-        <form onSubmit={handleSubmit} className="bg-white p-6 rounded-lg shadow space-y-4">
+        <form onSubmit={handleSubmit} className="bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300 border border-gray-100 space-y-4">
+          <h3 className="text-lg font-semibold mb-4 bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">Add New Route</h3>
           <div className="grid grid-cols-2 gap-4">
             <Input
               label="Origin Port"
@@ -133,7 +134,7 @@ export function RoutesTab() {
         </form>
       )}
 
-      <div className="bg-white p-6 rounded-lg shadow">
+      <div className="bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300 border border-gray-100">
         <div className="mb-4 flex gap-4">
           <Input
             placeholder="Filter by origin port"
@@ -149,9 +150,9 @@ export function RoutesTab() {
           />
         </div>
 
-        {isLoading && <div className="text-center py-8">Loading...</div>}
+        {isLoading && <div className="text-center py-8 text-gray-500">Loading...</div>}
         {error && (
-          <div className="text-red-600 py-4">
+          <div className="text-red-600 py-4 bg-red-50 border border-red-200 rounded-lg px-4">
             Error loading routes: {error instanceof Error ? error.message : String(error)}
           </div>
         )}
