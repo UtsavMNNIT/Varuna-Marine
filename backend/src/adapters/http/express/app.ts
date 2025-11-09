@@ -1,4 +1,5 @@
 import express, { Express } from 'express';
+import cors from 'cors';
 import { RouteRepository } from '../../../core/ports/RouteRepository';
 import { ComplianceRepository } from '../../../core/ports/ComplianceRepository';
 import { PoolRepository } from '../../../core/ports/PoolRepository';
@@ -14,7 +15,30 @@ export function createApp(
 ): Express {
   const app = express();
 
-  // Middleware
+  // ✅ CORS for localhost dev (3000 & 5173)
+  const ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+  ];
+
+  app.use(
+    cors({
+      origin: (origin, callback) => {
+        if (!origin || ALLOWED_ORIGINS.includes(origin)) {
+          callback(null, true);
+        } else {
+          callback(new Error(`CORS blocked for origin: ${origin}`));
+        }
+      },
+      credentials: true,
+      methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+      allowedHeaders: ["Content-Type", "Authorization"],
+    })
+  );
+
+  app.options("*", cors());
   app.use(express.json());
 
   // Routes
@@ -24,9 +48,7 @@ export function createApp(
   app.use('/pools', createPoolsRouter(poolRepository));
 
   // Health check
-  app.get('/health', (req, res) => {
-    res.json({ status: 'ok' });
-  });
+  app.get('/health', (_req, res) => res.json({ status: 'ok' }));
 
   // Error handling middleware
   app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
@@ -39,4 +61,3 @@ export function createApp(
 
   return app;
 }
-

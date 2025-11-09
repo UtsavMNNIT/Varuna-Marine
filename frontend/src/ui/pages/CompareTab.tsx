@@ -17,20 +17,27 @@ export function CompareTab() {
   const computeComparison = useComputeComparison();
 
   const handleComputeCB = async () => {
-    if (!ghgIntensity || !fuelConsumption) return;
+    if (!ghgIntensity || !fuelConsumption) {
+      alert('Please enter both GHG Intensity and Fuel Consumption values');
+      return;
+    }
     try {
       const result = await computeCB.mutateAsync({
         actualGhgIntensity: Number(ghgIntensity),
         fuelConsumption: Number(fuelConsumption),
       });
       alert(`Compliance Balance: ${result.cb.toFixed(2)}\n${result.isSurplus ? 'Surplus' : 'Deficit'}`);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to compute CB:', err);
+      alert(`Error: ${err?.message || 'Failed to compute Compliance Balance. Please check the console for details.'}`);
     }
   };
 
   const handleComputeComparison = async () => {
-    if (!ghgIntensity) return;
+    if (!ghgIntensity) {
+      alert('Please enter GHG Intensity value');
+      return;
+    }
     try {
       const result = await computeComparison.mutateAsync({
         actualGhgIntensity: Number(ghgIntensity),
@@ -38,8 +45,9 @@ export function CompareTab() {
       alert(
         `Actual: ${result.actual}\nTarget: ${result.target}\nDifference: ${result.difference.toFixed(2)}\nCompliant: ${result.isCompliant ? 'Yes' : 'No'}`
       );
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to compute comparison:', err);
+      alert(`Error: ${err?.message || 'Failed to compute comparison. Please check the console for details.'}`);
     }
   };
 

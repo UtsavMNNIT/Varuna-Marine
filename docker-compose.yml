@@ -1,14 +1,13 @@
 ﻿services:
   db:
     image: postgres:16
-    container_name: fueleu-postgres
     environment:
-      POSTGRES_USER: fe
-      POSTGRES_PASSWORD: fe_pass
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
       POSTGRES_DB: fueleu
     ports:
       - "5432:5432"
     volumes:
-      - postgres-data:/var/lib/postgresql/data
+      - pgdata:/var/lib/postgresql/data
 volumes:
-  postgres-data:
+  pgdata:
