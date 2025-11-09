@@ -28,7 +28,7 @@ export class PrismaComplianceRepository implements ComplianceRepository {
 
   async findByShipId(shipId: string): Promise<Compliance[]> {
     const compliances = await prisma.shipCompliance.findMany({
-      where: { shipId },
+      where: { vesselId: shipId }, // Map shipId to vesselId
       orderBy: { createdAt: 'desc' },
     });
 
@@ -36,12 +36,22 @@ export class PrismaComplianceRepository implements ComplianceRepository {
   }
 
   async findByRouteId(routeId: string): Promise<Compliance[]> {
-    const compliances = await prisma.shipCompliance.findMany({
-      where: { routeId },
+    // Since routeId is stored in JSON, we need to filter differently
+    const allCompliances = await prisma.shipCompliance.findMany({
       orderBy: { createdAt: 'desc' },
     });
 
-    return compliances.map(this.toDomain);
+    // Filter by routeId in fuelConsumptions JSON
+    const filtered = allCompliances.filter((c) => {
+      const fuelConsumptions = Array.isArray(c.fuelConsumptions) 
+        ? c.fuelConsumptions 
+        : typeof c.fuelConsumptions === 'object' && c.fuelConsumptions !== null
+        ? [c.fuelConsumptions]
+        : [];
+      return fuelConsumptions.some((fc: any) => fc.routeId === routeId);
+    });
+
+    return filtered.map(this.toDomain);
   }
 
   async findByReportingPeriod(period: string): Promise<Compliance[]> {
@@ -63,7 +73,7 @@ export class PrismaComplianceRepository implements ComplianceRepository {
   }
 
   async getMetricsByShipId(shipId: string, period?: string): Promise<ComplianceMetrics> {
-    const where: { shipId: string; reportingPeriod?: string } = { shipId };
+    const where: { vesselId: string; reportingPeriod?: string } = { vesselId: shipId };
     if (period) {
       where.reportingPeriod = period;
     }
@@ -76,31 +86,127 @@ export class PrismaComplianceRepository implements ComplianceRepository {
   }
 
   async getMetricsByRouteId(routeId: string, period?: string): Promise<ComplianceMetrics> {
-    const where: { routeId: string; reportingPeriod?: string } = { routeId };
-    if (period) {
-      where.reportingPeriod = period;
-    }
-
-    const compliances = await prisma.shipCompliance.findMany({
-      where,
+    // Since routeId is stored in JSON, we need to filter differently
+    const allCompliances = await prisma.shipCompliance.findMany({
+      where: period ? { reportingPeriod: period } : undefined,
     });
 
-    return this.calculateMetrics(compliances);
+    // Filter by routeId in fuelConsumptions JSON
+    const filtered = allCompliances.filter((c) => {
+      const fuelConsumptions = Array.isArray(c.fuelConsumptions) 
+        ? c.fuelConsumptions 
+        : typeof c.fuelConsumptions === 'object' && c.fuelConsumptions !== null
+        ? [c.fuelConsumptions]
+        : [];
+      return fuelConsumptions.some((fc: any) => fc.routeId === routeId);
+    });
+
+    return this.calculateMetrics(filtered);
   }
 
   async create(input: ComplianceCreateInput): Promise<Compliance> {
-    const compliance = await prisma.shipCompliance.create({
-      data: {
-        shipId: input.shipId,
-        routeId: input.routeId,
-        voyageId: input.voyageId,
-        fuelType: input.fuelType as FuelType,
-        fuelConsumption: input.fuelConsumption,
-        energyContent: input.energyContent,
-        ghgIntensity: input.ghgIntensity,
-        reportingPeriod: input.reportingPeriod,
+    // Check if a record already exists for this vesselId and reportingPeriod
+    const existing = await prisma.shipCompliance.findUnique({
+      where: {
+        vesselId_reportingPeriod: {
+          vesselId: input.shipId,
+          reportingPeriod: input.reportingPeriod,
+        },
       },
     });
+
+    // Store individual fuel consumption record in JSON
+    const fuelConsumptionRecord = {
+      routeId: input.routeId,
+      voyageId: input.voyageId,
+      fuelType: input.fuelType,
+      fuelConsumption: input.fuelConsumption,
+      energyContent: input.energyContent,
+      ghgIntensity: input.ghgIntensity,
+      timestamp: new Date().toISOString(),
+    };
+
+    // Store compliance period info in JSON
+    const compliancePeriod = {
+      routeId: input.routeId,
+      voyageId: input.voyageId,
+      period: input.reportingPeriod,
+    };
+
+    let compliance;
+
+    if (existing) {
+      // Update existing record: append new fuel consumption and recalculate aggregates
+      const existingFuelConsumptions = Array.isArray(existing.fuelConsumptions)
+        ? existing.fuelConsumptions
+        : typeof existing.fuelConsumptions === 'object' && existing.fuelConsumptions !== null
+        ? [existing.fuelConsumptions]
+        : [];
+      
+      const existingPeriods = Array.isArray(existing.compliancePeriods)
+        ? existing.compliancePeriods
+        : typeof existing.compliancePeriods === 'object' && existing.compliancePeriods !== null
+        ? [existing.compliancePeriods]
+        : [];
+
+      const updatedFuelConsumptions = [...existingFuelConsumptions, fuelConsumptionRecord];
+      const updatedPeriods = existingPeriods.some((p: any) => p.routeId === input.routeId && p.voyageId === input.voyageId)
+        ? existingPeriods
+        : [...existingPeriods, compliancePeriod];
+
+      // Recalculate aggregated values
+      const totalEnergyConsumed = updatedFuelConsumptions.reduce(
+        (sum, fc: any) => sum + (fc.energyContent || 0),
+        0
+      );
+      const totalCO2Emissions = updatedFuelConsumptions.reduce(
+        (sum, fc: any) => sum + ((fc.energyContent || 0) * (fc.ghgIntensity || 0)),
+        0
+      );
+      const averageCarbonIntensity = totalEnergyConsumed > 0
+        ? totalCO2Emissions / totalEnergyConsumed
+        : input.ghgIntensity;
+      const targetCarbonIntensity = 89.3368;
+      const complianceStatus = averageCarbonIntensity <= targetCarbonIntensity
+        ? ComplianceStatus.COMPLIANT
+        : ComplianceStatus.NON_COMPLIANT;
+
+      compliance = await prisma.shipCompliance.update({
+        where: { id: existing.id },
+        data: {
+          totalEnergyConsumed,
+          totalCO2Emissions,
+          averageCarbonIntensity,
+          targetCarbonIntensity,
+          complianceStatus,
+          fuelConsumptions: updatedFuelConsumptions,
+          compliancePeriods: updatedPeriods,
+        },
+      });
+    } else {
+      // Create new record
+      const totalEnergyConsumed = input.energyContent;
+      const totalCO2Emissions = input.energyContent * input.ghgIntensity;
+      const averageCarbonIntensity = input.ghgIntensity;
+      const targetCarbonIntensity = 89.3368;
+      const complianceStatus = input.ghgIntensity <= targetCarbonIntensity
+        ? ComplianceStatus.COMPLIANT
+        : ComplianceStatus.NON_COMPLIANT;
+
+      compliance = await prisma.shipCompliance.create({
+        data: {
+          vesselId: input.shipId, // Map shipId to vesselId
+          reportingPeriod: input.reportingPeriod,
+          totalEnergyConsumed,
+          totalCO2Emissions,
+          averageCarbonIntensity,
+          targetCarbonIntensity,
+          complianceStatus,
+          fuelConsumptions: [fuelConsumptionRecord], // Store as array in JSON
+          compliancePeriods: [compliancePeriod], // Store as array in JSON
+        },
+      });
+    }
 
     return this.toDomain(compliance);
   }
@@ -129,6 +235,16 @@ export class PrismaComplianceRepository implements ComplianceRepository {
     });
   }
 
+  async deleteAll(): Promise<void> {
+    await prisma.shipCompliance.deleteMany({});
+  }
+
+  async deleteByStatus(status: ComplianceStatus): Promise<void> {
+    await prisma.shipCompliance.deleteMany({
+      where: { complianceStatus: status as ComplianceStatus },
+    });
+  }
+
   async exists(id: string): Promise<boolean> {
     const count = await prisma.shipCompliance.count({
       where: { id },
@@ -139,27 +255,45 @@ export class PrismaComplianceRepository implements ComplianceRepository {
 
   private toDomain(compliance: {
     id: string;
-    shipId: string;
-    routeId: string;
-    voyageId: string;
-    fuelType: string;
-    fuelConsumption: number;
-    energyContent: number;
-    ghgIntensity: number;
-    complianceStatus: string;
+    vesselId: string;
     reportingPeriod: string;
+    totalEnergyConsumed: number;
+    totalCO2Emissions: number;
+    averageCarbonIntensity: number;
+    targetCarbonIntensity: number;
+    complianceStatus: string;
+    fuelConsumptions: any;
+    compliancePeriods: any;
     createdAt: Date;
     updatedAt: Date;
   }): Compliance {
+    // Extract the first fuel consumption record from JSON
+    const fuelConsumptions = Array.isArray(compliance.fuelConsumptions) 
+      ? compliance.fuelConsumptions 
+      : typeof compliance.fuelConsumptions === 'object' && compliance.fuelConsumptions !== null
+      ? [compliance.fuelConsumptions]
+      : [];
+    
+    const firstFuelRecord = fuelConsumptions[0] || {};
+    
+    // Extract route and voyage info from compliancePeriods
+    const compliancePeriods = Array.isArray(compliance.compliancePeriods) 
+      ? compliance.compliancePeriods 
+      : typeof compliance.compliancePeriods === 'object' && compliance.compliancePeriods !== null
+      ? [compliance.compliancePeriods]
+      : [];
+    
+    const firstPeriod = compliancePeriods[0] || {};
+
     return {
       id: compliance.id,
-      shipId: compliance.shipId,
-      routeId: compliance.routeId,
-      voyageId: compliance.voyageId,
-      fuelType: compliance.fuelType as FuelType,
-      fuelConsumption: compliance.fuelConsumption,
-      energyContent: compliance.energyContent,
-      ghgIntensity: compliance.ghgIntensity,
+      shipId: compliance.vesselId, // Map vesselId back to shipId
+      routeId: firstFuelRecord.routeId || firstPeriod.routeId || '',
+      voyageId: firstFuelRecord.voyageId || firstPeriod.voyageId || '',
+      fuelType: (firstFuelRecord.fuelType || 'MGO') as FuelType,
+      fuelConsumption: firstFuelRecord.fuelConsumption || 0,
+      energyContent: firstFuelRecord.energyContent || compliance.totalEnergyConsumed,
+      ghgIntensity: firstFuelRecord.ghgIntensity || compliance.averageCarbonIntensity,
       complianceStatus: compliance.complianceStatus as ComplianceStatus,
       reportingPeriod: compliance.reportingPeriod,
       createdAt: compliance.createdAt,
@@ -168,10 +302,11 @@ export class PrismaComplianceRepository implements ComplianceRepository {
   }
 
   private calculateMetrics(compliances: Array<{
-    fuelConsumption: number;
-    energyContent: number;
-    ghgIntensity: number;
+    totalEnergyConsumed: number;
+    totalCO2Emissions: number;
+    averageCarbonIntensity: number;
     complianceStatus: string;
+    fuelConsumptions?: any;
   }>): ComplianceMetrics {
     if (compliances.length === 0) {
       return {
@@ -183,12 +318,12 @@ export class PrismaComplianceRepository implements ComplianceRepository {
     }
 
     const totalEnergyConsumed = compliances.reduce(
-      (sum, c) => sum + c.energyContent,
+      (sum, c) => sum + c.totalEnergyConsumed,
       0
     );
 
     const totalGhgEmissions = compliances.reduce(
-      (sum, c) => sum + c.energyContent * c.ghgIntensity,
+      (sum, c) => sum + c.totalCO2Emissions,
       0
     );
 

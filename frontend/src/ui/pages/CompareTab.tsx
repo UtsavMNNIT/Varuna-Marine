@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { useCompliance, useComputeCB, useComputeComparison } from '@/application/hooks/useCompliance';
+import { useCompliance, useComputeCB, useComputeComparison, useCreateCompliance, useDeleteAllCompliance, useDeleteComplianceByStatus } from '@/application/hooks/useCompliance';
+import { useRoutes } from '@/application/hooks/useRoutes';
 import { Input } from '@/ui/components/Input';
 import { Button } from '@/ui/components/Button';
 import { Select } from '@/ui/components/Select';
@@ -13,12 +14,27 @@ export function CompareTab() {
   const [cbResult, setCbResult] = useState<ComputeCBResult | null>(null);
   const [comparisonResult, setComparisonResult] = useState<ComputeComparisonResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [formData, setFormData] = useState({
+    shipId: '',
+    routeId: '',
+    voyageId: '',
+    fuelType: 'MGO',
+    fuelConsumption: '',
+    energyContent: '',
+    ghgIntensity: '',
+    reportingPeriod: new Date().toISOString().slice(0, 7), // YYYY-MM format
+  });
 
   const { data: compliance = [], isLoading } = useCompliance(
     filterStatus ? { status: filterStatus } : undefined
   );
+  const { data: routes = [] } = useRoutes();
   const computeCB = useComputeCB();
   const computeComparison = useComputeComparison();
+  const createCompliance = useCreateCompliance();
+  const deleteAllCompliance = useDeleteAllCompliance();
+  const deleteByStatus = useDeleteComplianceByStatus();
 
   const handleComputeCB = async () => {
     if (!ghgIntensity || !fuelConsumption) {
@@ -60,6 +76,51 @@ export function CompareTab() {
       console.error('Failed to compute comparison:', err);
       setError(err?.message || 'Failed to compute comparison. Please check the console for details.');
       setComparisonResult(null);
+    }
+  };
+
+  const handleAddCompliance = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    try {
+      await createCompliance.mutateAsync({
+        shipId: formData.shipId,
+        routeId: formData.routeId,
+        voyageId: formData.voyageId,
+        fuelType: formData.fuelType,
+        fuelConsumption: Number(formData.fuelConsumption),
+        energyContent: Number(formData.energyContent),
+        ghgIntensity: Number(formData.ghgIntensity),
+        reportingPeriod: formData.reportingPeriod,
+      });
+      setShowAddForm(false);
+      setFormData({
+        shipId: '',
+        routeId: '',
+        voyageId: '',
+        fuelType: 'MGO',
+        fuelConsumption: '',
+        energyContent: '',
+        ghgIntensity: '',
+        reportingPeriod: new Date().toISOString().slice(0, 7),
+      });
+    } catch (err: any) {
+      console.error('Failed to create compliance:', err);
+      setError(err?.message || 'Failed to create compliance record. Please check the console for details.');
+    }
+  };
+
+  const handleDeleteAll = async () => {
+    if (window.confirm('Are you sure you want to delete ALL compliance data? This action cannot be undone.')) {
+      setError(null);
+      try {
+        await deleteAllCompliance.mutateAsync();
+        setCbResult(null);
+        setComparisonResult(null);
+      } catch (err: any) {
+        console.error('Failed to delete all compliance:', err);
+        setError(err?.message || 'Failed to delete all compliance records. Please check the console for details.');
+      }
     }
   };
 
@@ -210,7 +271,7 @@ export function CompareTab() {
       )}
 
       <div className="bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300 border border-gray-100">
-        <div className="mb-4">
+        <div className="mb-4 flex items-center justify-between flex-wrap gap-4">
           <Select
             label="Filter by Status"
             value={filterStatus}
@@ -224,7 +285,141 @@ export function CompareTab() {
             ]}
             className="max-w-xs"
           />
+          <div className="flex gap-2">
+            {compliance.length > 0 && (
+              <Button
+                onClick={handleDeleteAll}
+                disabled={deleteAllCompliance.isPending}
+                className="bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800"
+              >
+                {deleteAllCompliance.isPending ? 'Deleting...' : '🗑️ Delete All Data'}
+              </Button>
+            )}
+            <Button
+              onClick={() => setShowAddForm(!showAddForm)}
+              className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700"
+            >
+              {showAddForm ? 'Cancel' : '+ Add Compliance Data'}
+            </Button>
+          </div>
         </div>
+
+        {showAddForm && (
+          <form onSubmit={handleAddCompliance} className="mb-6 p-6 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200 space-y-4">
+            <h3 className="text-lg font-semibold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent mb-4">
+              Add New Compliance Record
+            </h3>
+            <div className="grid grid-cols-2 gap-4">
+              <Input
+                label="Ship ID"
+                type="text"
+                value={formData.shipId}
+                onChange={(e) => setFormData({ ...formData, shipId: e.target.value })}
+                placeholder="e.g., SHIP-001"
+                required
+              />
+              <Select
+                label="Route"
+                value={formData.routeId}
+                onChange={(e) => setFormData({ ...formData, routeId: e.target.value })}
+                options={[
+                  { value: '', label: 'Select a route' },
+                  ...routes.map((route) => ({
+                    value: route.id,
+                    label: `${route.originPort} → ${route.destinationPort}`,
+                  })),
+                ]}
+                required
+              />
+              <Input
+                label="Voyage ID"
+                type="text"
+                value={formData.voyageId}
+                onChange={(e) => setFormData({ ...formData, voyageId: e.target.value })}
+                placeholder="e.g., VOY-2024-001"
+                required
+              />
+              <Select
+                label="Fuel Type"
+                value={formData.fuelType}
+                onChange={(e) => setFormData({ ...formData, fuelType: e.target.value })}
+                options={[
+                  { value: 'MGO', label: 'MGO (Marine Gas Oil)' },
+                  { value: 'MDO', label: 'MDO (Marine Diesel Oil)' },
+                  { value: 'HFO', label: 'HFO (Heavy Fuel Oil)' },
+                  { value: 'LNG', label: 'LNG (Liquefied Natural Gas)' },
+                  { value: 'LPG', label: 'LPG (Liquefied Petroleum Gas)' },
+                  { value: 'METHANOL', label: 'Methanol' },
+                  { value: 'ETHANOL', label: 'Ethanol' },
+                  { value: 'HYDROGEN', label: 'Hydrogen' },
+                  { value: 'AMMONIA', label: 'Ammonia' },
+                  { value: 'ELECTRICITY', label: 'Electricity' },
+                  { value: 'BIOFUEL', label: 'Biofuel' },
+                  { value: 'SYNTHETIC_FUEL', label: 'Synthetic Fuel' },
+                ]}
+                required
+              />
+              <Input
+                label="Fuel Consumption (metric tons)"
+                type="number"
+                step="0.01"
+                value={formData.fuelConsumption}
+                onChange={(e) => setFormData({ ...formData, fuelConsumption: e.target.value })}
+                placeholder="e.g., 100"
+                required
+              />
+              <Input
+                label="Energy Content (MJ)"
+                type="number"
+                step="0.01"
+                value={formData.energyContent}
+                onChange={(e) => setFormData({ ...formData, energyContent: e.target.value })}
+                placeholder="e.g., 4100000"
+                required
+              />
+              <Input
+                label="GHG Intensity (gCO2eq/MJ)"
+                type="number"
+                step="0.01"
+                value={formData.ghgIntensity}
+                onChange={(e) => setFormData({ ...formData, ghgIntensity: e.target.value })}
+                placeholder="e.g., 80"
+                required
+              />
+              <Input
+                label="Reporting Period"
+                type="month"
+                value={formData.reportingPeriod}
+                onChange={(e) => setFormData({ ...formData, reportingPeriod: e.target.value })}
+                required
+              />
+            </div>
+            <div className="flex gap-2 pt-2">
+              <Button type="submit" disabled={createCompliance.isPending}>
+                {createCompliance.isPending ? 'Adding...' : 'Add Compliance Data'}
+              </Button>
+              <Button
+                type="button"
+                onClick={() => {
+                  setShowAddForm(false);
+                  setFormData({
+                    shipId: '',
+                    routeId: '',
+                    voyageId: '',
+                    fuelType: 'MGO',
+                    fuelConsumption: '',
+                    energyContent: '',
+                    ghgIntensity: '',
+                    reportingPeriod: new Date().toISOString().slice(0, 7),
+                  });
+                }}
+                className="bg-gray-500 hover:bg-gray-600"
+              >
+                Cancel
+              </Button>
+            </div>
+          </form>
+        )}
 
         {isLoading && <div className="text-center py-8 text-gray-500">Loading...</div>}
 
@@ -275,8 +470,16 @@ export function CompareTab() {
           </div>
         )}
 
-        {!isLoading && compliance.length === 0 && (
-          <div className="text-center py-8 text-gray-500">No compliance data available</div>
+        {!isLoading && compliance.length === 0 && !showAddForm && (
+          <div className="text-center py-8">
+            <p className="text-gray-500 mb-4">No compliance data available</p>
+            <Button
+              onClick={() => setShowAddForm(true)}
+              className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700"
+            >
+              + Add Your First Compliance Record
+            </Button>
+          </div>
         )}
       </div>
     </div>

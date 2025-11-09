@@ -99,6 +99,39 @@ export function createComplianceRouter(
     }
   );
 
+  // DELETE /compliance/all - Delete all compliance records
+  router.delete(
+    '/all',
+    async (req: Request, res: Response) => {
+      try {
+        await complianceRepository.deleteAll();
+        res.status(204).send();
+      } catch (error) {
+        res.status(500).json({ error: 'Failed to delete all compliance records', message: (error as Error).message });
+      }
+    }
+  );
+
+  // DELETE /compliance/status/:status - Delete compliance records by status
+  router.delete(
+    '/status/:status',
+    async (req: Request, res: Response) => {
+      try {
+        const { status } = req.params;
+        const validStatuses = ['COMPLIANT', 'NON_COMPLIANT', 'PENDING', 'UNDER_REVIEW'];
+        
+        if (!validStatuses.includes(status)) {
+          return res.status(400).json({ error: 'Invalid status', message: `Status must be one of: ${validStatuses.join(', ')}` });
+        }
+
+        await complianceRepository.deleteByStatus(status as any);
+        res.status(204).send();
+      } catch (error) {
+        res.status(500).json({ error: 'Failed to delete compliance records by status', message: (error as Error).message });
+      }
+    }
+  );
+
   // DELETE /compliance/:id - Delete compliance record
   router.delete(
     '/:id',

@@ -175,6 +175,10 @@ export class MockComplianceRepository implements ComplianceRepository {
     this.compliances.delete(id);
   }
 
+  async deleteAll(): Promise<void> {
+    this.compliances.clear();
+  }
+
   async exists(id: string): Promise<boolean> {
     return this.compliances.has(id);
   }

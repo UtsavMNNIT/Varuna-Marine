@@ -92,5 +92,17 @@ export const complianceApi = {
     const response = await apiClient.get(`/compliance/${id}/metrics`);
     return response.data.metrics;
   },
+
+  delete: async (id: string): Promise<void> => {
+    await apiClient.delete(`/compliance/${id}`);
+  },
+
+  deleteAll: async (): Promise<void> => {
+    await apiClient.delete('/compliance/all');
+  },
+
+  deleteByStatus: async (status: string): Promise<void> => {
+    await apiClient.delete(`/compliance/status/${status}`);
+  },
 };
 

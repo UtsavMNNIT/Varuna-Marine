@@ -18,6 +18,8 @@ export interface ComplianceRepository {
   create(input: ComplianceCreateInput): Promise<Compliance>;
   update(id: string, input: ComplianceUpdateInput): Promise<Compliance>;
   delete(id: string): Promise<void>;
+  deleteAll(): Promise<void>;
+  deleteByStatus(status: ComplianceStatus): Promise<void>;
   exists(id: string): Promise<boolean>;
 }
 

@@ -50,3 +50,36 @@ export function useCreateCompliance() {
   });
 }
 
+export function useDeleteCompliance() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => complianceApi.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['compliance'] });
+    },
+  });
+}
+
+export function useDeleteAllCompliance() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: () => complianceApi.deleteAll(),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['compliance'] });
+    },
+  });
+}
+
+export function useDeleteComplianceByStatus() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (status: string) => complianceApi.deleteByStatus(status),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['compliance'] });
+    },
+  });
+}
+
