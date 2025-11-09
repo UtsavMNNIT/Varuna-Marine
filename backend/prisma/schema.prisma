@@ -1,0 +1,154 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum RouteType {
+  INTRA_EU
+  EXTRA_EU
+  MIXED
+}
+
+enum FuelType {
+  MGO
+  MDO
+  HFO
+  LNG
+  LPG
+  METHANOL
+  ETHANOL
+  HYDROGEN
+  AMMONIA
+  ELECTRICITY
+  BIOFUEL
+  SYNTHETIC_FUEL
+}
+
+enum ComplianceStatus {
+  COMPLIANT
+  NON_COMPLIANT
+  PENDING
+  UNDER_REVIEW
+}
+
+enum PoolType {
+  VOLUNTARY
+  MANDATORY
+  COMPANY
+  FLEET
+}
+
+enum PoolStatus {
+  ACTIVE
+  CLOSED
+  PENDING
+  SUSPENDED
+}
+
+model Route {
+  id             String    @id @default(uuid())
+  originPort     String
+  destinationPort String
+  distance       Float     // in nautical miles
+  routeType      RouteType
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  // Relations
+  compliances    ShipCompliance[]
+
+  @@index([originPort, destinationPort])
+  @@index([routeType])
+  @@map("routes")
+}
+
+model ShipCompliance {
+  id               String            @id @default(uuid())
+  shipId           String
+  routeId          String
+  voyageId         String
+  fuelType         FuelType
+  fuelConsumption  Float             // in metric tons
+  energyContent    Float             // in MJ
+  ghgIntensity     Float             // in gCO2eq/MJ
+  complianceStatus ComplianceStatus  @default(PENDING)
+  reportingPeriod  String            // YYYY-MM format
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+
+  // Relations
+  route            Route             @relation(fields: [routeId], references: [id], onDelete: Restrict)
+
+  @@index([shipId])
+  @@index([routeId])
+  @@index([reportingPeriod])
+  @@index([complianceStatus])
+  @@index([shipId, reportingPeriod])
+  @@map("ship_compliance")
+}
+
+model BankEntry {
+  id          String   @id @default(uuid())
+  shipId      String
+  units       Float    // compliance units banked
+  bankedAt    DateTime @default(now())
+  expiryDate  DateTime
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([shipId])
+  @@index([expiryDate])
+  @@index([bankedAt])
+  @@index([shipId, expiryDate])
+  @@map("bank_entries")
+}
+
+model Pool {
+  id                      String      @id @default(uuid())
+  name                    String
+  description             String?
+  poolType                PoolType
+  status                  PoolStatus  @default(PENDING)
+  startDate               DateTime
+  endDate                 DateTime
+  totalComplianceUnits    Float       @default(0)
+  allocatedComplianceUnits Float      @default(0)
+  createdAt               DateTime    @default(now())
+  updatedAt               DateTime    @updatedAt
+
+  // Relations
+  members                 PoolMember[]
+
+  @@index([status])
+  @@index([poolType])
+  @@index([startDate, endDate])
+  @@map("pools")
+}
+
+model PoolMember {
+  id             String   @id @default(uuid())
+  poolId         String
+  shipId         String
+  allocatedUnits Float
+  contribution   Float   // percentage of pool's total compliance
+  joinedAt       DateTime @default(now())
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  // Relations
+  pool           Pool     @relation(fields: [poolId], references: [id], onDelete: Cascade)
+
+  @@unique([poolId, shipId])
+  @@index([poolId])
+  @@index([shipId])
+  @@index([poolId, shipId])
+  @@map("pool_members")
+}
+

@@ -152,6 +152,44 @@ describe('ComputeCB', () => {
       const expected = (TARGET - actual) * fuel * MULTIPLIER;
       expect(result.cb).toBe(expected);
     });
+
+    it('should handle negative fuel consumption (edge case)', () => {
+      const actual = 80.0;
+      const fuel = -100;
+
+      const result = computeCB(actual, fuel);
+
+      // Negative fuel should result in negative CB (or zero, depending on interpretation)
+      const expected = (TARGET - actual) * fuel * MULTIPLIER;
+      expect(result.cb).toBe(expected);
+      expect(result.cb).toBeLessThan(0);
+    });
+
+    it('should handle extreme negative CB values', () => {
+      const actual = 200.0; // Very high intensity
+      const fuel = 500; // Large fuel consumption
+
+      const result = computeCB(actual, fuel);
+
+      expect(result.cb).toBeLessThan(0);
+      expect(result.isSurplus).toBe(false);
+      // Verify the calculation
+      const expected = (TARGET - actual) * fuel * MULTIPLIER;
+      expect(result.cb).toBe(expected);
+    });
+
+    it('should handle extreme positive CB values', () => {
+      const actual = 20.0; // Very low intensity
+      const fuel = 500; // Large fuel consumption
+
+      const result = computeCB(actual, fuel);
+
+      expect(result.cb).toBeGreaterThan(0);
+      expect(result.isSurplus).toBe(true);
+      // Verify the calculation
+      const expected = (TARGET - actual) * fuel * MULTIPLIER;
+      expect(result.cb).toBe(expected);
+    });
   });
 });
 

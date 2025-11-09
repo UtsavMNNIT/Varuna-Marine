@@ -91,7 +91,7 @@ describe('CreatePool', () => {
     });
   });
 
-  describe('validation errors', () => {
+  describe('validation errors (mis-pools)', () => {
     it('should throw error when start date equals end date', () => {
       const input = {
         id: 'pool-4',
@@ -136,6 +136,60 @@ describe('CreatePool', () => {
         id: 'pool-7',
         name: '   ',
         poolType: PoolType.VOLUNTARY,
+        startDate,
+        endDate,
+        createdAt: baseDate,
+      };
+
+      expect(() => createPool(input)).toThrow('Pool name cannot be empty');
+    });
+
+    it('should throw error when start date is in the past relative to end date', () => {
+      const pastStart = new Date('2023-01-01');
+      const futureEnd = new Date('2024-12-31');
+      const input = {
+        id: 'pool-mis-1',
+        name: 'Misconfigured Pool',
+        poolType: PoolType.VOLUNTARY,
+        startDate: futureEnd,
+        endDate: pastStart,
+        createdAt: baseDate,
+      };
+
+      expect(() => createPool(input)).toThrow('Start date must be before end date');
+    });
+
+    it('should throw error when dates are reversed (mis-pool scenario)', () => {
+      const input = {
+        id: 'pool-mis-2',
+        name: 'Reversed Dates Pool',
+        poolType: PoolType.MANDATORY,
+        startDate: new Date('2025-12-31'),
+        endDate: new Date('2024-01-01'),
+        createdAt: baseDate,
+      };
+
+      expect(() => createPool(input)).toThrow('Start date must be before end date');
+    });
+
+    it('should throw error when name contains only newlines and tabs', () => {
+      const input = {
+        id: 'pool-mis-3',
+        name: '\n\t\n',
+        poolType: PoolType.VOLUNTARY,
+        startDate,
+        endDate,
+        createdAt: baseDate,
+      };
+
+      expect(() => createPool(input)).toThrow('Pool name cannot be empty');
+    });
+
+    it('should throw error when name is null-like (empty after trim)', () => {
+      const input = {
+        id: 'pool-mis-4',
+        name: '\r\n  \t  \r\n',
+        poolType: PoolType.COMPANY,
         startDate,
         endDate,
         createdAt: baseDate,
@@ -229,6 +283,71 @@ describe('CreatePool', () => {
 
       expect(result.pool.totalComplianceUnits).toBe(0);
       expect(result.pool.allocatedComplianceUnits).toBe(0);
+    });
+
+    it('should handle pool with start date in the past', () => {
+      const pastStart = new Date('2020-01-01');
+      const pastEnd = new Date('2023-12-31');
+
+      const input = {
+        id: 'pool-13',
+        name: 'Historical Pool',
+        poolType: PoolType.VOLUNTARY,
+        startDate: pastStart,
+        endDate: pastEnd,
+        createdAt: baseDate,
+      };
+
+      const result = createPool(input);
+
+      expect(result.pool.startDate).toBe(pastStart);
+      expect(result.pool.endDate).toBe(pastEnd);
+    });
+
+    it('should handle pool with overlapping date ranges (valid creation)', () => {
+      const input1 = {
+        id: 'pool-14',
+        name: 'Pool A',
+        poolType: PoolType.VOLUNTARY,
+        startDate: new Date('2024-01-01'),
+        endDate: new Date('2024-06-30'),
+        createdAt: baseDate,
+      };
+
+      const input2 = {
+        id: 'pool-15',
+        name: 'Pool B',
+        poolType: PoolType.VOLUNTARY,
+        startDate: new Date('2024-04-01'),
+        endDate: new Date('2024-12-31'),
+        createdAt: baseDate,
+      };
+
+      // Both should be valid (overlap is allowed, validation happens elsewhere)
+      const result1 = createPool(input1);
+      const result2 = createPool(input2);
+
+      expect(result1.pool.id).toBe('pool-14');
+      expect(result2.pool.id).toBe('pool-15');
+    });
+
+    it('should handle pool with same start and end times (different dates)', () => {
+      const sameDayStart = new Date('2024-06-15T00:00:00Z');
+      const sameDayEnd = new Date('2024-06-16T00:00:00Z');
+
+      const input = {
+        id: 'pool-16',
+        name: 'One Day Pool',
+        poolType: PoolType.FLEET,
+        startDate: sameDayStart,
+        endDate: sameDayEnd,
+        createdAt: baseDate,
+      };
+
+      const result = createPool(input);
+
+      expect(result.pool.startDate).toBe(sameDayStart);
+      expect(result.pool.endDate).toBe(sameDayEnd);
     });
   });
 });

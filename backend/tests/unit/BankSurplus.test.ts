@@ -163,6 +163,60 @@ describe('BankSurplus', () => {
       // Should handle leap year correctly
       expect(result.expiryDate.getFullYear()).toBe(2026);
     });
+
+    it('should handle negative surplus (should not happen but edge case)', () => {
+      const input = {
+        surplusUnits: -1000,
+        bankingDate: baseDate,
+      };
+
+      const result = bankSurplus(input);
+
+      // Negative surplus should result in negative banked units
+      expect(result.bankedUnits).toBe(-1000);
+      expect(result.originalSurplus).toBe(-1000);
+      expect(result.remainingSurplus).toBe(0);
+    });
+
+    it('should handle over-banking with negative capacity limit', () => {
+      const input = {
+        surplusUnits: 1000,
+        bankingDate: baseDate,
+        maxBankingCapacity: -500,
+      };
+
+      const result = bankSurplus(input);
+
+      // With negative capacity, should bank 0 (or negative, but Math.min handles it)
+      expect(result.bankedUnits).toBe(-500);
+      expect(result.remainingSurplus).toBe(1500);
+    });
+
+    it('should handle fractional surplus units', () => {
+      const input = {
+        surplusUnits: 1234.567,
+        bankingDate: baseDate,
+        maxBankingCapacity: 2000,
+      };
+
+      const result = bankSurplus(input);
+
+      expect(result.bankedUnits).toBe(1234.567);
+      expect(result.remainingSurplus).toBe(0);
+    });
+
+    it('should handle over-banking with fractional capacity', () => {
+      const input = {
+        surplusUnits: 1000.5,
+        bankingDate: baseDate,
+        maxBankingCapacity: 500.25,
+      };
+
+      const result = bankSurplus(input);
+
+      expect(result.bankedUnits).toBe(500.25);
+      expect(result.remainingSurplus).toBe(500.25);
+    });
   });
 });
 
