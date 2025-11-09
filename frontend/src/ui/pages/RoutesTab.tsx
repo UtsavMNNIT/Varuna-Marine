@@ -52,13 +52,29 @@ export function RoutesTab() {
   };
 
   const columns = [
-    { header: 'Origin Port', accessor: 'originPort' as keyof Route },
-    { header: 'Destination Port', accessor: 'destinationPort' as keyof Route },
-    { header: 'Distance (nm)', accessor: 'distance' as keyof Route },
-    { header: 'Route Type', accessor: 'routeType' as keyof Route },
+    { 
+      key: 'originPort' as keyof Route, 
+      header: 'Origin Port' 
+    },
+    { 
+      key: 'destinationPort' as keyof Route, 
+      header: 'Destination Port' 
+    },
+    { 
+      key: 'distance' as keyof Route, 
+      header: 'Distance (nm)',
+      render: (value: Route[keyof Route]) => {
+        return typeof value === 'number' ? value.toFixed(2) : value;
+      }
+    },
+    { 
+      key: 'routeType' as keyof Route, 
+      header: 'Route Type' 
+    },
     {
+      key: 'id' as keyof Route,
       header: 'Actions',
-      accessor: (row: Route) => (
+      render: (_value: Route[keyof Route], row: Route) => (
         <Button variant="danger" onClick={() => handleDelete(row.id)}>
           Delete
         </Button>
@@ -134,8 +150,18 @@ export function RoutesTab() {
         </div>
 
         {isLoading && <div className="text-center py-8">Loading...</div>}
-        {error && <div className="text-red-600 py-4">Error loading routes</div>}
-        {!isLoading && !error && <Table columns={columns} data={routes} />}
+        {error && (
+          <div className="text-red-600 py-4">
+            Error loading routes: {error instanceof Error ? error.message : String(error)}
+          </div>
+        )}
+        {!isLoading && !error && (
+          <Table 
+            columns={columns} 
+            data={routes} 
+            getRowKey={(row) => row.id}
+          />
+        )}
       </div>
     </div>
   );

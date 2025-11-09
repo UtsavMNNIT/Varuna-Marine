@@ -77,14 +77,36 @@ export function PoolingTab() {
   };
 
   const poolColumns = [
-    { header: 'Name', accessor: 'name' as keyof Pool },
-    { header: 'Type', accessor: 'poolType' as keyof Pool },
-    { header: 'Status', accessor: 'status' as keyof Pool },
-    { header: 'Total Units', accessor: 'totalComplianceUnits' as keyof Pool },
-    { header: 'Allocated Units', accessor: 'allocatedComplianceUnits' as keyof Pool },
+    { 
+      key: 'name' as keyof Pool, 
+      header: 'Name' 
+    },
+    { 
+      key: 'poolType' as keyof Pool, 
+      header: 'Type' 
+    },
+    { 
+      key: 'status' as keyof Pool, 
+      header: 'Status' 
+    },
+    { 
+      key: 'totalComplianceUnits' as keyof Pool, 
+      header: 'Total Units',
+      render: (value: Pool[keyof Pool]) => {
+        return typeof value === 'number' ? value.toFixed(2) : value;
+      }
+    },
+    { 
+      key: 'allocatedComplianceUnits' as keyof Pool, 
+      header: 'Allocated Units',
+      render: (value: Pool[keyof Pool]) => {
+        return typeof value === 'number' ? value.toFixed(2) : value;
+      }
+    },
     {
+      key: 'id' as keyof Pool,
       header: 'Actions',
-      accessor: (row: Pool) => (
+      render: (_value: Pool[keyof Pool], row: Pool) => (
         <div className="flex gap-2">
           <Button variant="secondary" onClick={() => setSelectedPool(row.id)}>
             View Members
@@ -98,10 +120,35 @@ export function PoolingTab() {
   ];
 
   const memberColumns = [
-    { header: 'Ship ID', accessor: 'shipId' as keyof PoolMember },
-    { header: 'Allocated Units', accessor: 'allocatedUnits' as keyof PoolMember },
-    { header: 'Contribution %', accessor: 'contribution' as keyof PoolMember },
-    { header: 'Joined At', accessor: 'joinedAt' as keyof PoolMember },
+    { 
+      key: 'shipId' as keyof PoolMember, 
+      header: 'Ship ID' 
+    },
+    { 
+      key: 'allocatedUnits' as keyof PoolMember, 
+      header: 'Allocated Units',
+      render: (value: PoolMember[keyof PoolMember]) => {
+        return typeof value === 'number' ? value.toFixed(2) : value;
+      }
+    },
+    { 
+      key: 'contribution' as keyof PoolMember, 
+      header: 'Contribution %',
+      render: (value: PoolMember[keyof PoolMember]) => {
+        return typeof value === 'number' ? `${value.toFixed(2)}%` : value;
+      }
+    },
+    { 
+      key: 'joinedAt' as keyof PoolMember, 
+      header: 'Joined At',
+      render: (value: PoolMember[keyof PoolMember]) => {
+        return value instanceof Date 
+          ? value.toLocaleDateString() 
+          : typeof value === 'string' 
+            ? new Date(value).toLocaleDateString() 
+            : value;
+      }
+    },
   ];
 
   return (
@@ -177,7 +224,14 @@ export function PoolingTab() {
         </div>
 
         {isLoading && <div className="text-center py-8">Loading...</div>}
-        {!isLoading && <Table columns={poolColumns} data={pools} emptyMessage="No pools available" />}
+        {!isLoading && (
+          <Table 
+            columns={poolColumns} 
+            data={pools} 
+            emptyText="No pools available"
+            getRowKey={(row) => row.id}
+          />
+        )}
       </div>
 
       {selectedPool && (
@@ -218,7 +272,12 @@ export function PoolingTab() {
             </form>
           )}
 
-          <Table columns={memberColumns} data={members} emptyMessage="No members in this pool" />
+          <Table 
+            columns={memberColumns} 
+            data={members} 
+            emptyText="No members in this pool"
+            getRowKey={(row) => row.id}
+          />
         </div>
       )}
     </div>
