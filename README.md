@@ -4,17 +4,12 @@
 A full-stack platform implementing core logic from
 FuelEU Maritime Regulation (EU) 2023/1805 — including:
 
-    Route GHG tracking
-
-    Compliance Balance calculation
-
-    Banking surplus CO₂ credits
-
-    Pooling between vessels
-
-    Baseline vs comparison analysis
-
-    Interactive maritime GHG dashboard
+Route GHG tracking
+Compliance Balance calculation
+Banking surplus CO₂ credits
+Pooling between vessels
+Baseline vs comparison analysis
+Interactive maritime GHG dashboard
 
 This system simulates compliance workflows for vessels operating under the FuelEU program.
 
