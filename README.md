@@ -1,82 +1,198 @@
 
-# ⚓ FuelEU Maritime Compliance Dashboard
+## 🚢 FuelEU Maritime Compliance Dashboard
 
-A full-stack web application to simulate and validate compliance calculations under the EU FuelEU Maritime Regulation (EU) 2023/1805.
-This system helps ship operators track greenhouse-gas intensity, calculate compliance balances, bank surplus credits, and form compliance pools — aligning with official regulation rules (Articles 20–21 & Annex IV).
+A full-stack platform implementing core logic from
+FuelEU Maritime Regulation (EU) 2023/1805 — including:
 
+    Route GHG tracking
 
-## 🚀 Features
-    
-- Route Management
-- Compliance Engine
-- Banking (Article 20)
-- Pooling (Article 21)
+    Compliance Balance calculation
 
+    Banking surplus CO₂ credits
 
-## Documentation
+    Pooling between vessels
 
-[Fuel EU Maritime Regulation (EU) 2023/1805, Annex IV and Articles 20–21](https://file.notion.so/f/f/b87c8e8a-b2b5-484b-8f29-dd49d349f1c2/77cebf3f-450a-40ae-b14c-2d7f629c7973/2025-May-ESSF-SAPS-WS1-FuelEU-calculation-methodologies_(1).pdf?table=block&id=29651e79-ddc8-809b-9189-c6448eaba642&spaceId=b87c8e8a-b2b5-484b-8f29-dd49d349f1c2&expirationTimestamp=1762740000000&signature=LBceTlrXMX_VD16YkYikFQarFp7tLf1whgfiRMyaB6g&downloadName=2025-May-ESSF-SAPS-WS1-FuelEU-calculation-methodologies.pdf)
+    Baseline vs comparison analysis
 
+    Interactive maritime GHG dashboard
 
-## 🛠 Tech Stack
-
-**Client:** React + Vite + TailwindCSS
-
-**Server:** Node.js + Express + TypeScript
-
-**Database:** PostgreSQL
-
-**Testing:** Vitest + Supertest
-
-**Containerization:** Docker & Docker-Compose
-
-**Architecture:** Ports & Adapters (Hexagonal)
+This system simulates compliance workflows for vessels operating under the FuelEU program.
 
 
-## 📦 Key Libraries
+## ✅ Core Features
+
+**🛣️ Routes Management**
+
+    Add / list maritime routes
+    Includes distance, vessel type, fuel type, GHG intensity, emissions, fuel consumption
+    Assign a baseline route
+
+**⚖️ Compare Tab**
+
+    Compare baseline vs other routes
+    GHG intensity (% diff)
+    Compliant / Non-compliant status
+
+**🌱 Compliance Engine**
+
+Implements EU Annex IV logic
+
+| Calculation   | Formula                      |
+| ------------- | ---------------------------- |
+| Energy (MJ)   | `fuelConsumption × 41,000`   |
+| CB (tCO₂eq)   | `(Target − Actual) × Energy` |
+| Target (2025) | `89.3368 gCO₂e/MJ`           |
+
+
+Surplus → Positive CB ✅
+
+Deficit → Negative CB ❌
+
+**🏦 Banking (Article 20)**
+
+    Bank surplus compliance credits
+    Apply banked credits to deficits
+    Prevent over-usage of banked pool
+
+**⚓ Pooling (Article 21)**
+
+    Create pool across multiple vessels
+    Ensure deficit vessels don’t worsen
+    Ensure surplus vessels don’t go negative
+    Greedy redistribution algorithm
+
+**📊 Dashboard UI**
+
+    Tailwind UI + Recharts
+    Tabs: Routes / Compare / Banking / Pooling
+    Real-time feedback & validation
+
+
+## 🧱 Tech Stack
+
+| Layer         | Technology                              |
+| ------------- | --------------------------------------- |
+| Frontend      | React + Vite + TailwindCSS              |
+| Backend       | Node.js + Express + TypeScript          |
+| Database      | PostgreSQL                              |
+| ORM           | Prisma                                  |
+| Dev Tools     | Docker, pnpm, Vitest                    |
+| AI Assistance | Cursor AI + GitHub Copilot + OpenAI GPT |
+
+
+## 📁 Architecture
+
+**Hexagonal (Ports & Adapters)**
+
+    src/
+        core/
+            domain/
+            application/
+            ports/
+        adapters/
+            inbound/http/
+            outbound/postgres/
+        infrastructure/
+        server/
+        db/
+    shared/
+
+✅ Business logic isolated from frameworks
+
+✅ Domain-driven design
+
+✅ Testable + scalable design
+
+## 🧪 Testing
+
+Vitest unit tests for:
+
+    Compute CB
+    Compare baseline
+    Banking logic
+    Pooling algorithm
+    Supertest API validation
+
+Run tests:
+
+    npm run dev
+
+
+
+## 🚀 Local Setup
+
+Prerequisites
+
+    Node 18+
+    Docker Desktop
+    pnpm (or npm/yarn)
+
+**Clone repo**
+
+    git clone https://github.com/UtsavMNNIT/Varuna-Marine.git
+    cd FuelEU
 
 **Backend**
 
-express
-
-zod + zod-validation-error (request validation)
-
-prisma (ORM)
-
-postgres (database)
-
-vitest & supertest (tests)
+    cd backend
+    pnpm install
+    docker compose up -d
+    pnpm exec prisma migrate dev
+    pnpm dev / npm run dev
 
 **Frontend**
 
-react
+    cd frontend
+    pnpm install
+    pnpm dev /npm run dev
 
-axios
+Frontend: http://localhost:3000
 
-react-router-dom
-
-tailwindcss
-
-shadcn/ui components
-## Environment Variables
-
-To run this project, you will need to add the following environment variables to your .env file
-
-`API_KEY` DATABASE_URL="postgresql://postgres:postgres@127.0.0.1:5432/fueleu?schema=public"
-PORT=3001
-
-
-`FRONTEND_API_KEY` VITE_API_URL=http://localhost:3001
+Backend API: http://localhost:3001
 
 
 
-## Deployment
+## 📂 Environment Variables
 
-To deploy this project run
+**Backend .env**
 
-```bash
-For frontend backend both:
-  npm run dev
-  pnpm dev
-```
+    DATABASE_URL="postgresql://postgres:postgres@localhost:5432/fueleu"
+    PORT=3001
 
+**Frontend .env**
+
+    VITE_API_URL=http://localhost:3001
+
+
+
+
+## 📎 Dataset Seed (Mock Fleet)
+
+    5 ship routes
+    Container, Bulk, RoRo, Tanker
+    Baseline + 4 comparisons
+    Realistic emissions + fuel consumption
+
+Stored & seeded via Prisma migration
+## 🤖 AI-Agent Collaboration
+
+| Tool           | Role                                       |
+| -------------- | ------------------------------------------ |
+| Cursor AI      | Code scaffolding, refactor, file edits     |
+| GitHub Copilot | Inline suggestions & boilerplate           |
+| OpenAI GPT     | Architecture decisions, formula validation |
+
+Manual verification performed for all compliance logic.
+
+See: AGENT_WORKFLOW.md
+## 📌 Future Enhancements
+
+    EU MRV / ETS integration
+    Advanced charts (CO₂ trajectory + energy mix)
+    User auth + role based access (admin vs operator)
+    API Digital twin for ship fleet simulation
+## 🙌 Acknowledgements
+
+    EU 2023/1805 FuelEU Maritime Regulation
+    Prisma + Express + React communities
+    AI coding partners (Cursor, Copilot, GPT)
