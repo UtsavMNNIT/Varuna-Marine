@@ -115,7 +115,7 @@ Vitest unit tests for:
 
 Run tests:
 
-    npm run dev
+    npm run dev / npm start dev
 
 
 
@@ -138,13 +138,13 @@ Prerequisites
     pnpm install
     docker compose up -d
     pnpm exec prisma migrate dev
-    pnpm dev / npm run dev
+    pnpm dev / npm run dev / npm start dev
 
 **Frontend**
 
     cd frontend
     pnpm install
-    pnpm dev /npm run dev
+    pnpm dev /npm run dev / npm start dev
 
 Frontend: http://localhost:3000
 
