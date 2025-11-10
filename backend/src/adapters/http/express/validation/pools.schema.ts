@@ -10,6 +10,8 @@ export const createPoolSchema = z.object({
     poolType: PoolTypeEnum,
     startDate: z.string().datetime().or(z.date()),
     endDate: z.string().datetime().or(z.date()),
+    totalComplianceUnits: z.number().nonnegative('Total units must be non-negative').optional(),
+    allocatedComplianceUnits: z.number().nonnegative('Allocated units must be non-negative').optional(),
   }).refine((data) => {
     const start = typeof data.startDate === 'string' ? new Date(data.startDate) : data.startDate;
     const end = typeof data.endDate === 'string' ? new Date(data.endDate) : data.endDate;
@@ -17,6 +19,14 @@ export const createPoolSchema = z.object({
   }, {
     message: 'Start date must be before end date',
     path: ['endDate'],
+  }).refine((data) => {
+    if (data.allocatedComplianceUnits !== undefined && data.totalComplianceUnits !== undefined) {
+      return data.allocatedComplianceUnits <= data.totalComplianceUnits;
+    }
+    return true;
+  }, {
+    message: 'Allocated units cannot exceed total units',
+    path: ['allocatedComplianceUnits'],
   }),
 });
 

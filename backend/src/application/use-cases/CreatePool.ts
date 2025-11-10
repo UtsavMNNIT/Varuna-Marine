@@ -19,7 +19,7 @@ export interface CreatePoolUseCaseInput extends PoolCreateInput {
  * Pure function with no side effects.
  */
 export function createPool(input: CreatePoolUseCaseInput): CreatePoolResult {
-  const { id, name, description, poolType, startDate, endDate, createdAt } = input;
+  const { id, name, description, poolType, startDate, endDate, createdAt, totalComplianceUnits, allocatedComplianceUnits } = input;
 
   // Validation
   if (startDate >= endDate) {
@@ -30,6 +30,12 @@ export function createPool(input: CreatePoolUseCaseInput): CreatePoolResult {
     throw new Error('Pool name cannot be empty');
   }
 
+  if (allocatedComplianceUnits !== undefined && totalComplianceUnits !== undefined) {
+    if (allocatedComplianceUnits > totalComplianceUnits) {
+      throw new Error('Allocated units cannot exceed total units');
+    }
+  }
+
   const pool: Pool = {
     id,
     name: name.trim(),
@@ -38,8 +44,8 @@ export function createPool(input: CreatePoolUseCaseInput): CreatePoolResult {
     status: PoolStatus.PENDING,
     startDate,
     endDate,
-    totalComplianceUnits: 0,
-    allocatedComplianceUnits: 0,
+    totalComplianceUnits: totalComplianceUnits ?? 0,
+    allocatedComplianceUnits: allocatedComplianceUnits ?? 0,
     createdAt,
     updatedAt: createdAt,
   };

@@ -69,7 +69,7 @@ export function createPoolsRouter(poolRepository: PoolRepository): Router {
     validate(createPoolSchema),
     async (req: Request, res: Response) => {
       try {
-        const { name, description, poolType, startDate, endDate } = req.body;
+        const { name, description, poolType, startDate, endDate, totalComplianceUnits, allocatedComplianceUnits } = req.body;
 
         const start = typeof startDate === 'string' ? new Date(startDate) : startDate;
         const end = typeof endDate === 'string' ? new Date(endDate) : endDate;
@@ -82,6 +82,8 @@ export function createPoolsRouter(poolRepository: PoolRepository): Router {
           poolType,
           startDate: start,
           endDate: end,
+          totalComplianceUnits,
+          allocatedComplianceUnits,
           createdAt: new Date(),
         });
 
@@ -92,6 +94,8 @@ export function createPoolsRouter(poolRepository: PoolRepository): Router {
           poolType,
           startDate: start,
           endDate: end,
+          totalComplianceUnits,
+          allocatedComplianceUnits,
         });
 
         res.status(201).json({ pool });

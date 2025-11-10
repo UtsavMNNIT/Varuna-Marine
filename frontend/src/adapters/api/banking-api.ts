@@ -5,6 +5,7 @@ export interface BankSurplusInput {
   bankingDate: string;
   maxBankingCapacity?: number;
   bankingValidityYears?: number;
+  shipId?: string;
 }
 
 export interface BankingResult {

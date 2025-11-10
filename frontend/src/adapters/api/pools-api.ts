@@ -29,6 +29,8 @@ export interface CreatePoolInput {
   poolType: 'VOLUNTARY' | 'MANDATORY' | 'COMPANY' | 'FLEET';
   startDate: string;
   endDate: string;
+  totalComplianceUnits?: number;
+  allocatedComplianceUnits?: number;
 }
 
 export const poolsApi = {

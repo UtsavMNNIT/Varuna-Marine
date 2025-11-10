@@ -13,6 +13,7 @@ export function BankingTab() {
     bankingDate: new Date().toISOString().split('T')[0],
     maxBankingCapacity: '',
     bankingValidityYears: '2',
+    shipId: '',
   });
   const [applyFormData, setApplyFormData] = useState({
     deficit: '',
@@ -34,6 +35,7 @@ export function BankingTab() {
           ? Number(bankFormData.maxBankingCapacity)
           : undefined,
         bankingValidityYears: Number(bankFormData.bankingValidityYears),
+        shipId: bankFormData.shipId || undefined,
       });
       setShowBankForm(false);
       setBankFormData({
@@ -41,6 +43,7 @@ export function BankingTab() {
         bankingDate: new Date().toISOString().split('T')[0],
         maxBankingCapacity: '',
         bankingValidityYears: '2',
+        shipId: '',
       });
     } catch (err) {
       console.error('Failed to bank surplus:', err);
@@ -134,6 +137,13 @@ export function BankingTab() {
         <form onSubmit={handleBankSurplus} className="bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300 border border-gray-100 space-y-4">
           <h3 className="text-lg font-semibold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">Bank Surplus Units</h3>
           <div className="grid grid-cols-2 gap-4">
+            <Input
+              label="Ship ID"
+              type="text"
+              value={bankFormData.shipId}
+              onChange={(e) => setBankFormData({ ...bankFormData, shipId: e.target.value })}
+              required
+            />
             <Input
               label="Surplus Units"
               type="number"

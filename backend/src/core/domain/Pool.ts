@@ -41,6 +41,8 @@ export interface PoolCreateInput {
   poolType: PoolType;
   startDate: Date;
   endDate: Date;
+  totalComplianceUnits?: number;
+  allocatedComplianceUnits?: number;
 }
 
 export interface PoolUpdateInput {

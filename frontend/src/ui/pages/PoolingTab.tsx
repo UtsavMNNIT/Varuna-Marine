@@ -17,6 +17,8 @@ export function PoolingTab() {
     poolType: 'VOLUNTARY' as 'VOLUNTARY' | 'MANDATORY' | 'COMPANY' | 'FLEET',
     startDate: '',
     endDate: '',
+    totalComplianceUnits: '',
+    allocatedComplianceUnits: '',
   });
   const [memberFormData, setMemberFormData] = useState({
     shipId: '',
@@ -36,6 +38,8 @@ export function PoolingTab() {
         ...formData,
         startDate: new Date(formData.startDate).toISOString(),
         endDate: new Date(formData.endDate).toISOString(),
+        totalComplianceUnits: formData.totalComplianceUnits ? Number(formData.totalComplianceUnits) : undefined,
+        allocatedComplianceUnits: formData.allocatedComplianceUnits ? Number(formData.allocatedComplianceUnits) : undefined,
       });
       setShowForm(false);
       setFormData({
@@ -44,6 +48,8 @@ export function PoolingTab() {
         poolType: 'VOLUNTARY',
         startDate: '',
         endDate: '',
+        totalComplianceUnits: '',
+        allocatedComplianceUnits: '',
       });
     } catch (err) {
       console.error('Failed to create pool:', err);
@@ -198,6 +204,22 @@ export function PoolingTab() {
               type="date"
               value={formData.endDate}
               onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
+              required
+            />
+            <Input
+              label="Total Units"
+              type="number"
+              step="0.01"
+              value={formData.totalComplianceUnits}
+              onChange={(e) => setFormData({ ...formData, totalComplianceUnits: e.target.value })}
+              required
+            />
+            <Input
+              label="Allocated Units"
+              type="number"
+              step="0.01"
+              value={formData.allocatedComplianceUnits}
+              onChange={(e) => setFormData({ ...formData, allocatedComplianceUnits: e.target.value })}
               required
             />
           </div>

@@ -70,6 +70,8 @@ export class PrismaPoolRepository implements PoolRepository {
           poolType: input.poolType,
           startDate: input.startDate.toISOString(),
           endDate: input.endDate.toISOString(),
+          totalComplianceUnits: input.totalComplianceUnits ?? 0,
+          allocatedComplianceUnits: input.allocatedComplianceUnits ?? 0,
           records: [],
         },
       },
@@ -261,8 +263,8 @@ export class PrismaPoolRepository implements PoolRepository {
       status: pool.status as PoolStatus,
       startDate: records.startDate ? new Date(records.startDate) : new Date(),
       endDate: records.endDate ? new Date(records.endDate) : new Date(),
-      totalComplianceUnits: 0, // Will be calculated from members
-      allocatedComplianceUnits: 0, // Will be calculated from members
+      totalComplianceUnits: records.totalComplianceUnits ?? 0,
+      allocatedComplianceUnits: records.allocatedComplianceUnits ?? 0,
       createdAt: pool.createdAt,
       updatedAt: pool.updatedAt,
     };
