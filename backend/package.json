@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "tsx watch src/infrastructure/server/index.ts",
     "build": "tsc -p .",
-    "start": "node dist/infrastructure/server/index.js",
+    "start": "node scripts/start.js",
     "test": "vitest run"
   },
   "prisma": {
