@@ -5,10 +5,15 @@ A full-stack platform implementing core logic from
 FuelEU Maritime Regulation (EU) 2023/1805 — including:
 
 Route GHG tracking
+
 Compliance Balance calculation
+
 Banking surplus CO₂ credits
+
 Pooling between vessels
+
 Baseline vs comparison analysis
+
 Interactive maritime GHG dashboard
 
 This system simulates compliance workflows for vessels operating under the FuelEU program.
@@ -18,15 +23,19 @@ This system simulates compliance workflows for vessels operating under the FuelE
 
 **🛣️ Routes Management**
 
-    Add / list maritime routes
-    Includes distance, vessel type, fuel type, GHG intensity, emissions, fuel consumption
-    Assign a baseline route
+Add / list maritime routes
+
+Includes distance, vessel type, fuel type, GHG intensity, emissions, fuel consumption
+
+Assign a baseline route
 
 **⚖️ Compare Tab**
 
-    Compare baseline vs other routes
-    GHG intensity (% diff)
-    Compliant / Non-compliant status
+Compare baseline vs other routes
+    
+GHG intensity (% diff)
+    
+Compliant / Non-compliant status
 
 **🌱 Compliance Engine**
 
@@ -45,22 +54,29 @@ Deficit → Negative CB ❌
 
 **🏦 Banking (Article 20)**
 
-    Bank surplus compliance credits
-    Apply banked credits to deficits
-    Prevent over-usage of banked pool
+Bank surplus compliance credits
+    
+Apply banked credits to deficits
+    
+Prevent over-usage of banked pool
 
 **⚓ Pooling (Article 21)**
 
-    Create pool across multiple vessels
-    Ensure deficit vessels don’t worsen
-    Ensure surplus vessels don’t go negative
-    Greedy redistribution algorithm
+Create pool across multiple vessels
+    
+Ensure deficit vessels don’t worsen
+    
+Ensure surplus vessels don’t go negative
+    
+Greedy redistribution algorithm
 
 **📊 Dashboard UI**
 
-    Tailwind UI + Recharts
-    Tabs: Routes / Compare / Banking / Pooling
-    Real-time feedback & validation
+Tailwind UI + Recharts
+    
+Tabs: Routes / Compare / Banking / Pooling
+
+Real-time feedback & validation
 
 
 ## 🧱 Tech Stack
@@ -102,11 +118,15 @@ Deficit → Negative CB ❌
 
 Vitest unit tests for:
 
-    Compute CB
-    Compare baseline
-    Banking logic
-    Pooling algorithm
-    Supertest API validation
+Compute CB
+    
+Compare baseline
+    
+Banking logic
+
+Pooling algorithm
+
+Supertest API validation
 
 Run tests:
 
@@ -118,8 +138,10 @@ Run tests:
 
 Prerequisites
 
-    Node 18+
-    Docker Desktop
+Node 18+
+    
+Docker Desktop
+    
     pnpm (or npm/yarn)
 
 **Clone repo**
@@ -163,10 +185,13 @@ Backend API: http://localhost:3001
 
 ## 📎 Dataset Seed (Mock Fleet)
 
-    5 ship routes
-    Container, Bulk, RoRo, Tanker
-    Baseline + 4 comparisons
-    Realistic emissions + fuel consumption
+5 ship routes
+    
+Container, Bulk, RoRo, Tanker
+    
+Baseline + 4 comparisons
+    
+Realistic emissions + fuel consumption
 
 Stored & seeded via Prisma migration
 ## 🤖 AI-Agent Collaboration
@@ -182,12 +207,17 @@ Manual verification performed for all compliance logic.
 See: AGENT_WORKFLOW.md
 ## 📌 Future Enhancements
 
-    EU MRV / ETS integration
-    Advanced charts (CO₂ trajectory + energy mix)
-    User auth + role based access (admin vs operator)
-    API Digital twin for ship fleet simulation
+EU MRV / ETS integration
+    
+Advanced charts (CO₂ trajectory + energy mix)
+    
+User auth + role based access (admin vs operator)
+    
+API Digital twin for ship fleet simulation
 ## 🙌 Acknowledgements
 
-    EU 2023/1805 FuelEU Maritime Regulation
-    Prisma + Express + React communities
-    AI coding partners (Cursor, Copilot, GPT)
+EU 2023/1805 FuelEU Maritime Regulation
+    
+Prisma + Express + React communities
+
+AI coding partners (Cursor, Copilot, GPT)
