@@ -131,7 +131,7 @@ Supertest API validation
 Run tests:
 
     npm run dev / npm start dev
-if npm start dev doesn't work just add "start"="vite" in package.json script for frontend and backend both.
+if npm start dev doesn't work just add "start":"vite" in package.json script for frontend and backend both.
 
 
 ## 🚀 Local Setup
